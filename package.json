@@ -1,0 +1,12 @@
+{
+  "name": "hade.ai",
+  "version": "1.0.0",
+  "description": "Helpful Assistant Digital Educator AI || hade.ai",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
