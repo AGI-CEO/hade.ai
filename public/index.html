@@ -4,5 +4,58 @@
     <script defer src="app.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body></body>
+  <body>
+    <!-- Header Section -->
+    <header>
+      <h1 id="hade">
+        <pre>
+ _               _             _ 
+| |             | |           (_)
+| |__   __ _  __| | ___   __ _ _ 
+| '_ \ / _` |/ _` |/ _ \ / _` | |
+| | | | (_| | (_| |  __/| (_| | |
+|_| |_|\__,_|\__,_|\___(_)__,_|_|
+        </pre>
+      </h1>
+      <nav>
+        <ul>
+          <li><a href="#">Home</a></li>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Services</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- Main Content Section -->
+    <main>
+      <div id="chatbot-container">
+        <div id="chat-messages">
+          <div class="bot-message">
+            <div class="avatar">🤖</div>
+            <p>Hello, how can I assist you today?</p>
+          </div>
+          <div class="user-message">
+            <div class="avatar" style="text-align: right">🧐</div>
+            <p>I need help with my account.</p>
+          </div>
+        </div>
+      </div>
+      <div id="message-input-container">
+        <input
+          type="text"
+          id="message-input"
+          placeholder="Type your message here..."
+        />
+        <button id="send-button">Send</button>
+      </div>
+    </main>
+
+    <!-- Footer Section -->
+    <footer>
+      <p id="madeby">
+        Made with 🗡️ by <a href="https:/bio.blaisep.com"> Blaise Pascual</a>
+      </p>
+    </footer>
+  </body>
 </html>
