@@ -27,6 +27,8 @@ body {
   background-color: #121212;
   color: #fff;
   margin: 0; /* Removes default margin */
+  min-width: 50vw;
+  min-height: 50vh;
 }
 
 header,
@@ -34,8 +36,8 @@ main,
 footer {
   margin: 0px auto;
   padding: 20px;
-  max-width: 1200px;
-  min-width: 400px;
+  max-width: 95vw;
+  min-width: 70vw;
 }
 
 main {
@@ -94,14 +96,8 @@ footer {
 body {
   background-color: #121212;
   width: 100%;
-  height: 60vh; /* Adjust as needed */
-}
-
-h1,
-h2,
-p,
-a {
-  color: #e0e0e0;
+  /*   height: 60vh; /* Adjust as needed */
+  min-height: 50vh;
 }
 
 header,
