@@ -20,7 +20,8 @@ app.post("/login", async (req, res) => {
   const { email } = req.body;
   const { data, error } = await supabase
     .from("Users")
-    .select("*", "email", email);
+    .select("*")
+    .eq("email", email);
 
   if (error) {
     console.log(error);
@@ -35,7 +36,6 @@ app.post("/login", async (req, res) => {
     }
   }
 });
-
 app.listen(port, () => {
   console.log(`hade.ai listening at http://localhost:${port}`);
 });
