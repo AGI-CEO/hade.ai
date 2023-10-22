@@ -17,14 +17,21 @@
 |_| |_|\__,_|\__,_|\___(_)__,_|_|
         </pre>
       </h1>
-      <nav>
-        <ul>
-          <li><a href="#">Home</a></li>
-          <li><a href="#">About</a></li>
-          <li><a href="#">Services</a></li>
-          <li><a href="#">Contact</a></li>
-        </ul>
-      </nav>
+      <div
+        id="upload-container"
+        style="width: 100%; overflow: hidden; color: #000"
+      >
+        <p id="file-instruction">
+          Please choose a PDF file you would like to learn from:
+        </p>
+        <input
+          type="file"
+          id="pdf-upload"
+          accept=".pdf"
+          style="margin: 0 auto; display: block"
+          onchange="document.getElementById('file-instruction').textContent = this.files[0].name"
+        />
+      </div>
     </header>
 
     <!-- Main Content Section -->
