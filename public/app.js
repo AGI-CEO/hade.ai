@@ -70,3 +70,20 @@ setTimeout(() => {
       }, 1000);
     });
 }, 1000);
+
+document.getElementById("pdf-upload").addEventListener("change", function () {
+  const fileInput = document.getElementById("pdf-upload");
+  const file = fileInput.files[0];
+  if (file) {
+    const formData = new FormData();
+    formData.append("pdf", file);
+
+    fetch("/upload", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((data) => console.log(data))
+      .catch((error) => console.error(error));
+  }
+});

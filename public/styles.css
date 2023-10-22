@@ -36,7 +36,7 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-image: url("img/bg.webp");
+  background-image: url("img/bg.gif");
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -186,10 +186,10 @@ footer {
   color: #121212;
 }
 #header {
-  height: 10vh;
+  height: 5vh;
 }
 #hade {
-  font-size: 18px;
+  font-size: 16px;
   text-align: center;
 }
 
@@ -256,4 +256,42 @@ footer {
   box-sizing: border-box; /* Add this line to fix the border sizing issue */
   border: 3px solid #e0e0e0;
   background-color: #1f1f1fee;
+}
+
+#upload-container {
+  position: relative;
+  width: 100%;
+  height: auto;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
+  border: 2px solid #e0e0e0;
+  background-color: #f8f8f8;
+}
+#madeby {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.2em;
+  color: #f8f8f8; /* Changed color to light grey for better visibility */
+  text-shadow: 2px 2px 4px #000000;
+}
+
+#madeby a {
+  color: #ffd700; /* Changed hyperlink color to gold */
+  animation: colorChange 2s infinite;
+}
+
+@keyframes colorChange {
+  0% {
+    color: #ffd700;
+  }
+  50% {
+    color: #ff5733;
+  }
+  100% {
+    color: #ffd700;
+  }
 }
