@@ -1,3 +1,5 @@
+let userId = null;
+
 const createPopupContainer = (content) => {
   const popupContainer = document.createElement("div");
   popupContainer.setAttribute("id", "popup-container");
@@ -46,6 +48,7 @@ setTimeout(() => {
             return response.json();
           })
           .then(function (data) {
+            userId = data.userId;
             setTimeout(() => {
               popupContainer = createPopupContainer(
                 `<h2 style="font-weight:bold;">${data.message}</h2>`
@@ -77,6 +80,7 @@ document.getElementById("pdf-upload").addEventListener("change", function () {
   if (file) {
     const formData = new FormData();
     formData.append("pdf", file);
+    formData.append("userId", userId);
 
     fetch("/upload", {
       method: "POST",
