@@ -87,7 +87,26 @@ document.getElementById("pdf-upload").addEventListener("change", function () {
       body: formData,
     })
       .then((response) => response.json())
-      .then((data) => console.log(data))
+      .then((data) => {
+        console.log(data);
+        const summary = data.summary;
+
+        // Add the summary as a bot message to the DOM
+        const botMessage = document.createElement("div");
+        botMessage.className = "bot-message";
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = "🤖";
+
+        const message = document.createElement("p");
+        message.textContent = summary;
+
+        botMessage.appendChild(avatar);
+        botMessage.appendChild(message);
+
+        document.getElementById("chat-messages").appendChild(botMessage);
+      })
       .catch((error) => console.error(error));
   }
 });

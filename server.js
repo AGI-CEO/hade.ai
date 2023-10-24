@@ -88,7 +88,7 @@ app.post("/upload", async (req, res) => {
         res.status(500).send({ message: "Error during file upload." });
       } else {
         // Summarize the PDF and save to DB
-        await summarizePdfAndSaveToDb(
+        const summary = await summarizePdfAndSaveToDb(
           tempFilePath,
           file.name.replace(".pdf", "")
         );
@@ -107,7 +107,10 @@ app.post("/upload", async (req, res) => {
           console.error(error);
           res.status(500).send({ message: "Error during database operation." });
         } else {
-          res.send({ message: "File uploaded successfully." });
+          res.send({
+            message: "File uploaded successfully.",
+            summary: summary,
+          });
         }
       }
     });
@@ -140,7 +143,11 @@ async function updateDatabaseRow(pdfName, summary) {
 
 async function summarizePdfAndSaveToDb(pdfPath, pdfName) {
   // Load the PDF content
-  const loader = new PDFLoader(pdfPath, { splitPages: false });
+  const loader = new PDFLoader(pdfPath, { splitPages: true });
+  const textSplitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 2000,
+    chunkOverlap: 100,
+  });
   const docs = await loader.load();
 
   // Initialize the Langchain components
@@ -150,14 +157,20 @@ async function summarizePdfAndSaveToDb(pdfPath, pdfName) {
     AZURE_OPENAI_BASE_PATH: process.env.AZURE_OPENAI_BASE_PATH,
     azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
   });
+
   // Create the summarization chain
-  const chain = loadSummarizationChain(model, { type: "map_reduce" });
+  const chain = loadSummarizationChain(model, {
+    type: "map_reduce",
+    verbose: true,
+  });
 
   // Generate the summary
-  const res = await chain.call({ input_documents: docs });
-  console.log(res.text);
+  const result = await chain.call({ input_documents: docs });
+  console.log(result.text);
   // Save the summary to the database
-  await updateDatabaseRow(pdfName, res.text);
+  await updateDatabaseRow(pdfName, result.text);
+  // Return the summary
+  return result.text;
 }
 
 app.listen(port, () => {
