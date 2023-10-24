@@ -16,6 +16,8 @@
     "express": "^4.18.2",
     "express-fileupload": "^1.4.1",
     "langchain": "^0.0.170",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^3.11.174",
     "pg": "^8.11.3"
   }
 }
