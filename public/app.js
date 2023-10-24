@@ -99,11 +99,15 @@ document.getElementById("pdf-upload").addEventListener("change", function () {
         avatar.className = "avatar";
         avatar.textContent = "🤖";
 
+        const messageContainer = document.createElement("div");
+        messageContainer.className = "message-container";
+
         const message = document.createElement("p");
         message.textContent = summary;
 
+        messageContainer.appendChild(message);
         botMessage.appendChild(avatar);
-        botMessage.appendChild(message);
+        botMessage.appendChild(messageContainer);
 
         document.getElementById("chat-messages").appendChild(botMessage);
       })

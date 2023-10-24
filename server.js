@@ -8,14 +8,18 @@ import { ChatOpenAI } from "langchain/chat_models/openai";
 import { loadSummarizationChain } from "langchain/chains";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import { SupabaseVectorStore } from "langchain/vectorstores/supabase";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 
 const app = express();
 const port = 3000;
 
 dotenv.config();
+const privateKeyDB = process.env.DB_URL;
+const urlDB = process.env.DB_KEY;
 
 // Create a single supabase client for interacting with your database
-const supabase = createClient(process.env.DB_URL, process.env.DB_KEY);
+const supabase = createClient(privateKeyDB, urlDB);
 
 //serve the public static files
 app.use(express.static("public"));
@@ -107,6 +111,24 @@ app.post("/upload", async (req, res) => {
           console.error(error);
           res.status(500).send({ message: "Error during database operation." });
         } else {
+          // Create an instance of SupabaseVectorStore and OpenAIEmbeddings
+          const embeddings = new OpenAIEmbeddings({
+            azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
+            azureOpenAIApiInstanceName:
+              process.env.AZURE_OPENAI_API_INSTANCE_NAME,
+            azureOpenAIApiDeploymentName: "text-embedding-ada-002",
+            model: "text-embedding-ada-002",
+          });
+          const vectorStore = new SupabaseVectorStore(embeddings, {
+            client: supabase,
+            tableName: "documents",
+          });
+
+          // Add the PDF content to the vector store
+          await vectorStore.addDocuments([
+            { pageContent: summary, metadata: { user_id: userId } },
+          ]);
+
           res.send({
             message: "File uploaded successfully.",
             summary: summary,
@@ -156,6 +178,7 @@ async function summarizePdfAndSaveToDb(pdfPath, pdfName) {
     azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
     AZURE_OPENAI_BASE_PATH: process.env.AZURE_OPENAI_BASE_PATH,
     azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+    MODEL_NAME: "gpt-35-turbo-16k",
   });
 
   // Create the summarization chain
@@ -172,6 +195,9 @@ async function summarizePdfAndSaveToDb(pdfPath, pdfName) {
   // Return the summary
   return result.text;
 }
+
+//message route to langchain conversational agent
+app.post("/message", async (req, res) => {});
 
 app.listen(port, () => {
   console.log(`hade.ai listening at http://localhost:${port}`);
