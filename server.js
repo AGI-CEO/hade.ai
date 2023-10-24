@@ -4,6 +4,10 @@ import pg from "pg";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
+import { ChatOpenAI } from "langchain/chat_models/openai";
+import { loadSummarizationChain } from "langchain/chains";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 
 const app = express();
 const port = 3000;
@@ -83,6 +87,12 @@ app.post("/upload", async (req, res) => {
         console.error(err);
         res.status(500).send({ message: "Error during file upload." });
       } else {
+        // Summarize the PDF and save to DB
+        await summarizePdfAndSaveToDb(
+          tempFilePath,
+          file.name.replace(".pdf", "")
+        );
+
         // Delete the PDF file
         fs.unlinkSync(tempFilePath);
 
@@ -106,6 +116,49 @@ app.post("/upload", async (req, res) => {
     res.status(500).send({ message: "Error during file upload." });
   }
 });
+
+// Function to read PDF as text
+async function readPdfAsText(pdfPath) {
+  let dataBuffer = fs.readFileSync(pdfPath);
+
+  pdf(dataBuffer).then(function (data) {
+    fs.writeFileSync("/tmp/pdfText.txt", data.text);
+  });
+}
+
+// Function to update database row
+async function updateDatabaseRow(pdfName, summary) {
+  const { data, error } = await supabase
+    .from("PDFUploads")
+    .update({ summary: summary })
+    .eq("pdf_name", pdfName);
+
+  if (error) {
+    console.error(error);
+  }
+}
+
+async function summarizePdfAndSaveToDb(pdfPath, pdfName) {
+  // Load the PDF content
+  const loader = new PDFLoader(pdfPath, { splitPages: false });
+  const docs = await loader.load();
+
+  // Initialize the Langchain components
+  const model = new ChatOpenAI({
+    temperature: 0.9,
+    azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
+    AZURE_OPENAI_BASE_PATH: process.env.AZURE_OPENAI_BASE_PATH,
+    azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+  });
+  // Create the summarization chain
+  const chain = loadSummarizationChain(model, { type: "map_reduce" });
+
+  // Generate the summary
+  const res = await chain.call({ input_documents: docs });
+  console.log(res.text);
+  // Save the summary to the database
+  await updateDatabaseRow(pdfName, res.text);
+}
 
 app.listen(port, () => {
   console.log(`hade.ai listening at http://localhost:${port}`);
