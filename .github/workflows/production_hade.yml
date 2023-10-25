@@ -14,8 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: '.env'
-    env:  # Using secrets as environment variables
-      SUPABASE_URL: ${{ secrets.DB_URL }}  
+    env: # Explicitly setting each secret as an environment variable
+      AZURE_OPENAI_API_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_API_DEPLOYMENT_NAME }}
+      AZURE_OPENAI_API_INSTANCE_NAME: ${{ secrets.AZURE_OPENAI_API_INSTANCE_NAME }}
+      AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+      AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
+      DB_KEY: ${{ secrets.DB_KEY }}
+      DB_URL: ${{ secrets.DB_URL }}
+      PORT: ${{ secrets.PORT }}
       
     steps:
       - uses: actions/checkout@v4
