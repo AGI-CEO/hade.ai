@@ -21,7 +21,7 @@ jobs:
       AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
       DB_KEY: ${{ secrets.DB_KEY }}
       DB_URL: ${{ secrets.DB_URL }}
-      PORT: ${{ secrets.PORT }}
+      port: ${{ secrets.port }}
       
     steps:
       - uses: actions/checkout@v4
