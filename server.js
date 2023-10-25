@@ -10,13 +10,32 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { SupabaseVectorStore } from "langchain/vectorstores/supabase";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { initializeAgentExecutorWithOptions } from "langchain/agents";
+import { VectorDBQAChain } from "langchain/chains";
+import { ChainTool } from "langchain/tools";
+import { BufferMemory } from "langchain/memory";
+import { PromptTemplate } from "langchain/prompts";
+import { StringOutputParser } from "langchain/schema/output_parser";
+import { SupabaseHybridSearch } from "langchain/retrievers/supabase";
+
+import {
+  RunnableSequence,
+  RunnablePassthrough,
+} from "langchain/schema/runnable";
 
 const app = express();
-const port = 3000;
 
 dotenv.config();
+const port = process.env.port;
 const privateKeyDB = process.env.DB_URL;
 const urlDB = process.env.DB_KEY;
+
+const memory = new BufferMemory({
+  returnMessages: true,
+  inputKey: "input",
+  outputKey: "output",
+  memoryKey: "history",
+});
 
 // Create a single supabase client for interacting with your database
 const supabase = createClient(privateKeyDB, urlDB);
@@ -75,6 +94,8 @@ app.post("/login", async (req, res) => {
   }
 });
 
+let summary = null;
+
 app.post("/upload", async (req, res) => {
   try {
     if (!req.files) {
@@ -96,9 +117,6 @@ app.post("/upload", async (req, res) => {
           tempFilePath,
           file.name.replace(".pdf", "")
         );
-
-        // Delete the PDF file
-        fs.unlinkSync(tempFilePath);
 
         // Add a new row to the PDFUploads table
         const { data, error } = await supabase
@@ -125,13 +143,23 @@ app.post("/upload", async (req, res) => {
           });
 
           // Add the PDF content to the vector store
-          await vectorStore.addDocuments([
-            { pageContent: summary, metadata: { user_id: userId } },
-          ]);
+          // Load the PDF content
+          const loader = new PDFLoader(tempFilePath, { splitPages: true });
+          const textSplitter = new RecursiveCharacterTextSplitter({
+            chunkSize: 2000,
+            chunkOverlap: 100,
+          });
+          const docs = await loader.load();
 
+          console.log("Embedding completed.");
+
+          // Delete the PDF file
+          //fs.unlinkSync(tempFilePath);
           res.send({
             message: "File uploaded successfully.",
             summary: summary,
+            pdfName: file.name.replace(".pdf", ""),
+            pdfPath: tempFilePath,
           });
         }
       }
@@ -141,7 +169,6 @@ app.post("/upload", async (req, res) => {
     res.status(500).send({ message: "Error during file upload." });
   }
 });
-
 // Function to read PDF as text
 async function readPdfAsText(pdfPath) {
   let dataBuffer = fs.readFileSync(pdfPath);
@@ -196,8 +223,62 @@ async function summarizePdfAndSaveToDb(pdfPath, pdfName) {
   return result.text;
 }
 
-//message route to langchain conversational agent
-app.post("/message", async (req, res) => {});
+app.post("/message", async (req, res) => {
+  const userId = req.body.userId;
+  const pdfPath = req.body.pdfPath;
+
+  const embeddings = new OpenAIEmbeddings({
+    azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
+    azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_INSTANCE_NAME,
+    azureOpenAIApiDeploymentName: "text-embedding-ada-002",
+    model: "text-embedding-ada-002",
+  });
+
+  // Initialize the Langchain components
+  const model = new ChatOpenAI({
+    temperature: 0.9,
+    azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
+    AZURE_OPENAI_BASE_PATH: process.env.AZURE_OPENAI_BASE_PATH,
+    azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+    MODEL_NAME: "gpt-35-turbo-16k",
+  });
+
+  const retriever = new SupabaseHybridSearch(embeddings, {
+    client: supabase,
+    similarityK: 2,
+    keywordK: 2,
+    tableName: "documents",
+    similarityQueryName: "match_documents",
+    keywordQueryName: "kw_match_documents",
+  });
+
+  // Create an instance of VectorDBQAChain using the SupabaseHybridSearch instance
+  const chain = VectorDBQAChain.fromLLM(model, retriever);
+
+  const qaTool = new ChainTool({
+    name: "contextual-qa",
+    description:
+      "Contextual QA - useful for when you need contextual information from a document",
+    chain: chain,
+  });
+
+  const tools = [qaTool];
+  const executor = await initializeAgentExecutorWithOptions(tools, model, {
+    agentType: "zero-shot-react-description",
+    memory: memory,
+  });
+  console.log("Loaded agent.");
+
+  const input = req.body.message;
+
+  console.log(`Executing with input "${input}"...`);
+
+  const result = await executor.call({ input });
+
+  console.log(`Got output ${result.output}`);
+
+  res.json({ response: { message: result.output } });
+});
 
 app.listen(port, () => {
   console.log(`hade.ai listening at http://localhost:${port}`);

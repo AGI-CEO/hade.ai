@@ -1,4 +1,6 @@
 let userId = null;
+let pdfName = null;
+let pdfPath = null;
 
 const createPopupContainer = (content) => {
   const popupContainer = document.createElement("div");
@@ -90,6 +92,8 @@ document.getElementById("pdf-upload").addEventListener("change", function () {
       .then((data) => {
         console.log(data);
         const summary = data.summary;
+        const pdfName = data.pdfName;
+        const pdfPath = data.pdfPath;
 
         // Add the summary as a bot message to the DOM
         const botMessage = document.createElement("div");
@@ -114,3 +118,88 @@ document.getElementById("pdf-upload").addEventListener("change", function () {
       .catch((error) => console.error(error));
   }
 });
+
+document
+  .getElementById("message-input")
+  .addEventListener("keypress", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+
+document.getElementById("send-button").addEventListener("click", function (e) {
+  e.preventDefault();
+  sendMessage();
+});
+
+function sendMessage() {
+  const messageInput = document.getElementById("message-input");
+  const messageText = messageInput.value;
+  const uuid = userId;
+
+  // Create a DOM element with the user message
+  const userMessage = document.createElement("div");
+  userMessage.id = uuid;
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = "🧐";
+
+  const messageContainer = document.createElement("div");
+  messageContainer.className = "message-container";
+
+  const message = document.createElement("p");
+  message.textContent = messageText;
+
+  messageContainer.appendChild(message);
+  userMessage.appendChild(avatar);
+  userMessage.appendChild(messageContainer);
+  userMessage.className = "user-message";
+
+  document.getElementById("chat-messages").appendChild(userMessage);
+  // Scroll to the bottom of the chat
+  const chatContainer = document.getElementById("chat-messages");
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+
+  // Send a POST request to the /message route
+  fetch("/message", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      uuid: userId,
+      message: messageText,
+      pdfName: pdfName,
+      pdfPath: pdfPath,
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data);
+
+      // Create a DOM element with the bot message
+      const botMessage = document.createElement("div");
+      botMessage.className = "bot-message";
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = "🤖";
+
+      const messageContainer = document.createElement("div");
+      messageContainer.className = "message-container";
+
+      const message = document.createElement("p");
+      message.textContent = data.response.message; // Use the response from the server
+
+      messageContainer.appendChild(message);
+      botMessage.appendChild(avatar);
+      botMessage.appendChild(messageContainer);
+
+      document.getElementById("chat-messages").appendChild(botMessage);
+    })
+    .catch((error) => console.error(error));
+
+  // Clear the input field
+  messageInput.value = "";
+}
