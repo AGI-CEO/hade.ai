@@ -24,7 +24,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '18.x'
-
+      - name: Debug env variables
+          run: env
       - name: npm install, build, and test
         run: |
           npm install
