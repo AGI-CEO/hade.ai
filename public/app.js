@@ -1,6 +1,7 @@
 let userId = null;
 let pdfName = null;
 let pdfPath = null;
+let pdfId = null;
 
 const createPopupContainer = (content) => {
   const popupContainer = document.createElement("div");
@@ -94,6 +95,7 @@ document.getElementById("pdf-upload").addEventListener("change", function () {
         const summary = data.summary;
         const pdfName = data.pdfName;
         const pdfPath = data.pdfPath;
+        const pdfId = data.pdfId;
 
         // Add the summary as a bot message to the DOM
         const botMessage = document.createElement("div");
@@ -172,6 +174,7 @@ function sendMessage() {
       message: messageText,
       pdfName: pdfName,
       pdfPath: pdfPath,
+      pdfId: pdfId,
     }),
   })
     .then((response) => response.json())

@@ -96,6 +96,7 @@ app.post("/login", async (req, res) => {
 
 let summary = null;
 
+//handles file upload and initial summarization
 app.post("/upload", async (req, res) => {
   try {
     if (!req.files) {
@@ -119,49 +120,68 @@ app.post("/upload", async (req, res) => {
         );
 
         // Add a new row to the PDFUploads table
-        const { data, error } = await supabase
+        const { error: insertError } = await supabase
           .from("PDFUploads")
           .insert([
             { user_id: userId, pdf_name: file.name.replace(".pdf", "") },
           ]);
 
-        if (error) {
-          console.error(error);
+        if (insertError) {
+          console.error(insertError);
           res.status(500).send({ message: "Error during database operation." });
-        } else {
-          // Create an instance of SupabaseVectorStore and OpenAIEmbeddings
-          const embeddings = new OpenAIEmbeddings({
-            azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
-            azureOpenAIApiInstanceName:
-              process.env.AZURE_OPENAI_API_INSTANCE_NAME,
-            azureOpenAIApiDeploymentName: "text-embedding-ada-002",
-            model: "text-embedding-ada-002",
-          });
-          const vectorStore = new SupabaseVectorStore(embeddings, {
-            client: supabase,
-            tableName: "documents",
-          });
-
-          // Add the PDF content to the vector store
-          // Load the PDF content
-          const loader = new PDFLoader(tempFilePath, { splitPages: true });
-          const textSplitter = new RecursiveCharacterTextSplitter({
-            chunkSize: 2000,
-            chunkOverlap: 100,
-          });
-          const docs = await loader.load();
-
-          console.log("Embedding completed.");
-
-          // Delete the PDF file
-          //fs.unlinkSync(tempFilePath);
-          res.send({
-            message: "File uploaded successfully.",
-            summary: summary,
-            pdfName: file.name.replace(".pdf", ""),
-            pdfPath: tempFilePath,
-          });
+          return;
         }
+
+        // Query the database for the ID of the newly inserted row
+        const { data: selectData, error: selectError } = await supabase
+          .from("PDFUploads")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("pdf_name", file.name.replace(".pdf", ""))
+          .order("id", { ascending: false })
+          .limit(1);
+
+        if (selectError) {
+          console.error(selectError);
+          res.status(500).send({ message: "Error during database operation." });
+          return;
+        }
+
+        const pdfUploadId = selectData[0].id;
+
+        // Create an instance of SupabaseVectorStore and OpenAIEmbeddings
+        const embeddings = new OpenAIEmbeddings({
+          azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
+          azureOpenAIApiInstanceName:
+            process.env.AZURE_OPENAI_API_INSTANCE_NAME,
+          azureOpenAIApiDeploymentName: "text-embedding-ada-002",
+          model: "text-embedding-ada-002",
+        });
+        const vectorStore = new SupabaseVectorStore(embeddings, {
+          client: supabase,
+          tableName: "documents",
+        });
+
+        // Add the PDF content to the vector store
+        // Load the PDF content
+        const loader = new PDFLoader(tempFilePath, { splitPages: true });
+        const textSplitter = new RecursiveCharacterTextSplitter({
+          chunkSize: 2000,
+          chunkOverlap: 100,
+        });
+        const docs = await loader.load();
+
+        console.log("Embedding completed.");
+
+        // Delete the PDF file
+        //fs.unlinkSync(tempFilePath);
+        res.send({
+          message: "File uploaded successfully.",
+          summary: summary,
+          pdfName: file.name.replace(".pdf", ""),
+          pdfPath: tempFilePath,
+          pdfID: pdfUploadId,
+        });
       }
     });
   } catch (error) {
@@ -190,6 +210,7 @@ async function updateDatabaseRow(pdfName, summary) {
   }
 }
 
+// Function to summarize PDF and save to DB
 async function summarizePdfAndSaveToDb(pdfPath, pdfName) {
   // Load the PDF content
   const loader = new PDFLoader(pdfPath, { splitPages: true });
@@ -223,6 +244,7 @@ async function summarizePdfAndSaveToDb(pdfPath, pdfName) {
   return result.text;
 }
 
+//route to handle messages from user
 app.post("/message", async (req, res) => {
   const userId = req.body.userId;
   const pdfPath = req.body.pdfPath;
@@ -278,6 +300,22 @@ app.post("/message", async (req, res) => {
   console.log(`Got output ${result.output}`);
 
   res.json({ response: { message: result.output } });
+
+  const user_uuid = req.body.uuid;
+  const user_msg = req.body.message;
+  const ai_msg = result.output;
+  const PDF_id = req.body.pdfID;
+
+  const { data, error } = await supabase.from("ChatHistory").insert([
+    {
+      user_id: user_uuid,
+      user_msg: user_msg,
+      AI_msg: ai_msg,
+      PDF_id: PDF_id,
+    },
+  ]);
+
+  if (error) console.log(error);
 });
 
 app.listen(port, () => {
