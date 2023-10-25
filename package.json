@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Helpful Assistant Digital Educator AI || hade.ai",
   "type": "module",
-  "main": "index.js",
+  "main": "server.js",
+  "start": "node server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
